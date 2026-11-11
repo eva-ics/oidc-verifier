@@ -67,8 +67,7 @@ async fn fetch_jwks(path: &str) -> Result<JWKeys> {
         let status = res.status();
         if !status.is_success() {
             return Err(Error::access(format!(
-                "Failed to fetch JWKs: HTTP {}",
-                status
+                "Failed to fetch JWKs: HTTP {status}"
             )));
         }
         let data = res.text().await.map_err(Error::access)?;
@@ -145,7 +144,7 @@ impl Verifier {
                     retry_delay,
                     failed_after,
                 )
-                .await
+                .await;
             }
         });
         Self {
@@ -227,7 +226,7 @@ fn check_jwt(jwk: &Value, token: &str, sub_field: &str) -> Result<String> {
                 "P-256" | "P-384" => {
                     DecodingKey::from_ec_components(x, y).map_err(Error::failed)?
                 }
-                _ => return Err(Error::failed(format!("Unsupported EC curve: {}", crv))),
+                _ => return Err(Error::failed(format!("Unsupported EC curve: {crv}"))),
             }
         }
         Some("oct") => {
@@ -250,17 +249,13 @@ fn check_jwt(jwk: &Value, token: &str, sub_field: &str) -> Result<String> {
                         .as_slice(),
                 ),
                 _ => {
-                    return Err(Error::invalid_data(format!(
-                        "Unsupported OKP curve: {}",
-                        crv
-                    )));
+                    return Err(Error::invalid_data(format!("Unsupported OKP curve: {crv}")));
                 }
             }
         }
         other => {
             return Err(Error::unsupported(format!(
-                "Unsupported key type: {:?}",
-                other
+                "Unsupported key type: {other:?}"
             )));
         }
     };
@@ -275,8 +270,8 @@ fn check_jwt(jwk: &Value, token: &str, sub_field: &str) -> Result<String> {
     };
     let sub_value = obj
         .get(sub_field)
-        .ok_or_else(|| Error::invalid_data(format!("Missing field: {}", sub_field)))?;
+        .ok_or_else(|| Error::invalid_data(format!("Missing field: {sub_field}")))?;
     let sub = String::deserialize(sub_value)
-        .map_err(|_| Error::invalid_data(format!("Field {} is not a string", sub_field)))?;
+        .map_err(|_| Error::invalid_data(format!("Field {sub_field} is not a string")))?;
     Ok(sub)
 }
